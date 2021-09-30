@@ -1,6 +1,6 @@
 #-------------------------------------------------------------------------------
 
-# Title: Model 1
+# Title: Model 3
 # Date: 9/29/2021
 
 # Description: Clean travel data and merger travel cost for relevant 

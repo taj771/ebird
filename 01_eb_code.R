@@ -1,121 +1,53 @@
 #-------------------------------------------------------------------------------
-
 # Title: Model 1
-# Date: 9/29/2021
-
-# Description: Clean travel data and merger travel cost for relevant 
+# Date: 09/29/2021
+# Description: Get the number of unique species of a hot spot and number of 
+# species by month
 #-------------------------------------------------------------------------------
-
 # Load packages
 library(tidyverse)
+library(janitor)
 library(lubridate)
-
 #-------------------------------------------------------------------------------
 # Import data
-# Person-trips
-df_pt <- read_csv("./data/processed/ab-ebdusers-person-trips.csv")
-
-# Travel costs
-df_travel_costs <- read_csv("./data/processed/ab-ebd-travel-costs.csv")
-
-# User postal codes
-df_pc_sub <- read_csv("./data/processed/ab-ebdusers-pc-locations.csv")
-
-# Euclidean distances
-df_euc_dist <- read_csv("./data/processed/pc-hotspot-euclidean-distances.csv")
-
-# All hotspot locations
-df_hot_loc <- read_csv("./data/processed/ab-ebd-hotspot-locations.csv")
+df_ebd_ab_all = read_csv("./data/base/ebd_CA-AB_prv_relJan-2020_subset.csv")
 
 #-------------------------------------------------------------------------------
-#originally set trvel distance as 5km to 120km, make necesssary changes
-travel_cutoff_lo = 5
-travel_cutoff_hi = 120
+# Tidying
+# Subset observations:
+df_ebd_ab_sub <- df_ebd_ab_all %>%
+  # Clean up column names
+  clean_names(case = "snake") %>%
+  # Remove observations pre-2009
+  mutate(observation_date = ymd(observation_date)) %>%
+  filter(observation_date >= "2009-01-01") %>%
+  select(common_name, scientific_name, county, iba_code, bcr_code,
+         locality:observation_date, observer_id, sampling_event_identifier,
+         group_identifier, trip_comments)
 
-# Retrieve relevant person-trips (have postal codes, between 5 - 120 km)
+# Retrieve number of checklists and unique species for each locality
+df_loc_check <- df_ebd_ab_sub %>%
+  mutate(month = month(observation_date)) %>%
+  filter(locality_type == "H" | locality_type == "P") %>%
+  group_by(locality, locality_id, month) %>%
+  summarise(n_checklist = n_distinct(sampling_event_identifier),
+            n_species = n_distinct(scientific_name))
 
-df_pt_rel <- df_pt %>%
-  left_join(df_pc_sub, by = "observer_id") %>%
-  # Filter out trips where we don't have postal code info; might want these later though.
-  filter(!is.na(postal_code)) %>%
-  left_join(df_euc_dist, by = c("postal_code", "locality_id")) %>%
-  filter(euc_distance_km <= travel_cutoff_hi & euc_distance_km >= travel_cutoff_lo) %>%
-  select(observer_id, observation_date, locality_id, locality) # missing Kanaskis travel costs. 
-
-# Calculate trip counts by month-year 
-
-df_trip_counts <- df_pt_rel %>%
-  mutate(month = as.character(month(observation_date, label = TRUE)),
-         year = year(observation_date)) %>%
-  group_by(observer_id, locality_id, month, year) %>%
-  tally()
-
-#-------------------------------------------------------------------------------
-
-# Construct large (!) choice set matrix for modeling
-
-# Vector of hotspots - 1,227 total.
-locality_id <- df_hot_loc %>% pull(locality_id)
-
-# Vector of unique users - 404 total.
-observer_id <- df_pt_rel %>% select(observer_id) %>% distinct() %>% pull()
-
-# Earliest trips
-earliest <- df_pt_rel %>%
-  group_by(observer_id) %>%
-  summarise(earliest_trip = floor_date(min(observation_date), unit = "month")) 
-
-# Vector of years
-year <- seq(2009, 2020, 1)
-# Vector of months
-month <- month.abb
-
-# Travel costs
-df_costs <- df_travel_costs %>% select(locality_id, postal_code, cost_total)
-
-# Construct matrix
-df_modeling <- crossing(observer_id, locality_id) %>%
-  left_join(df_pc_sub, by = "observer_id") %>%
-  select(-c(latitude, longitude)) %>%
-  left_join(df_euc_dist, by = c("postal_code", "locality_id")) %>%
-  # Only keep combos we're interested (i.e. 1-200km)
-  filter(euc_distance_km <= travel_cutoff_hi & euc_distance_km >= travel_cutoff_lo) %>%
-  crossing(month, year) %>%
-  # Truncate at Jan 2020
-  filter(!(year == "2020" & !month == "Jan")) %>%
-  left_join(df_costs, by = c("postal_code", "locality_id")) %>%
-  select(observer_id, locality_id, month, year, cost_total) %>%
-  left_join(df_trip_counts, by = c("observer_id", "locality_id", "month", "year")) %>%
-  mutate(n_trips = ifelse(is.na(n), 0, n)) %>%
-  select(-n) %>%
-  mutate(month = factor(month, levels = month.abb),
-         year = factor(year)) %>%
-  arrange(observer_id, locality_id, month, year) %>%
-  # Truncate choices by when each observer's earliest trip was
-  mutate(choice_date = as.Date(paste0("01", " ", month, " ", year), format = "%d %b %Y")) %>%
-  left_join(earliest, by = "observer_id") %>%
-  mutate(relevant_choice = ifelse(earliest_trip <= choice_date, 1, 0)) %>%
-  filter(relevant_choice == "1") %>%
-  select(observer_id:n_trips)
-
-# Investigate people with missing travel cost data
-df_test = df_modeling %>%
-  filter(is.na(cost_total)) %>%
-  distinct(observer_id) %>%
-  left_join(df_pc_sub, by = "observer_id")
-
-hist(df_modeling$cost_total)
-
-df_test = df_modeling %>%
-  group_by(n_trips) %>%
-  summarise(count = n()) 
+# remove locality name
+df_loc_check = subset(df_loc_check,select = -c(locality, n_checklist))
+df_loc_check <- df_loc_check%>%
+  group_by(locality_id)
+write_csv(df_loc_check, "data/processed/n_species_monthly.csv")
 
 
+df_unique_species_loc = subset(df_ebd_ab_sub, select = c(scientific_name, locality_id, sampling_event_identifier))%>%
+  group_by(locality_id)%>%
+  summarise(n_checklist = n_distinct(sampling_event_identifier),
+            n_species = n_distinct(scientific_name))
+  
+df_unique_species_loc = subset(df_unique_species_loc, select = -c(n_checklist))
 
+write_csv(df_unique_species_loc, "data/processed/n_species_loc.csv")
 
-
-
-
-
-
+  
 

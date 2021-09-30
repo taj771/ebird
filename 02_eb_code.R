@@ -1,101 +1,39 @@
 #-------------------------------------------------------------------------------
-# Title: model 1
-# As start we used n_alt = 5, when replicating make sure to ajust as appropriate
+
+# Title: Model 1
 # Date: 9/29/2021
 
-# Description: Make a data set comparable with Apollo
-
+# Description: Clean travel data and merger travel cost for relevant 
 #-------------------------------------------------------------------------------
-#Clear memory 
-#-------------------------------------------------------------------------------
-rm(list = ls())
 
 # Load packages
 library(tidyverse)
 library(lubridate)
-library(furrr)
-
 
 #-------------------------------------------------------------------------------
-# Select these variables
+# Import data
+# Person-trips
+df_pt <- read_csv("./data/processed/ab-ebdusers-person-trips.csv")
 
-# Number of workers for parallel processing
-n_workers = 4
-consider_time = 1
+# Travel costs
+df_travel_costs <- read_csv("./data/processed/ab-ebd-travel-costs.csv")
 
-# low/high end of stright line travel cost distance km
-# The travel distance set as the 5km and 120km, Please change this range as it 
-#needed 
+# User postal codes
+df_pc_sub <- read_csv("./data/processed/ab-ebdusers-pc-locations.csv")
+
+# Euclidean distances
+df_euc_dist <- read_csv("./data/processed/pc-hotspot-euclidean-distances.csv")
+
+# All hotspot locations
+df_hot_loc <- read_csv("./data/processed/ab-ebd-hotspot-locations.csv")
+
+#-------------------------------------------------------------------------------
+#originally set trvel distance as 5km to 120km, make necesssary changes
 travel_cutoff_lo = 5
 travel_cutoff_hi = 120
 
-travel_hours_lo = 5/60 # 5/60 is 5 minutes
-travel_hours_hi = 2 #
+# Retrieve relevant person-trips (have postal codes, between 5 - 120 km)
 
-# Choose number of non-chosen alternatives to sample
-# originally set it for 5 make changes as it required
-n_alts = 5
-
-#-------------------------------------------------------------------------------
-# Function to sample non-chosen consideration_sets for each person
-# Works at the individual choice level
-# choices: dataframe with one row with observer_id, locality_id, year, month
-# consideration_sets: dataframe with consideration_sets for each observer_id
-# n_alts: number of non-chosen alternatives to include
-# 
-# returns out: dataframe with full consideration set (chosen and n_alt non-chosen alternatives)
-SampleAlternatives = function(choices, consideration_sets, n_alts){
-  trip_other = choices %>%
-    select(-choice, -locality_id)
-  choices = choices %>%
-    select(observer_id, locality_id, choice)
-  # Return dataframe for each id
-  df_alts = consideration_sets %>%
-    filter(observer_id == choices$observer_id & 
-             locality_id != choices$locality_id) %>% # insure non-chosen
-    mutate(choice = 0)
-  
-  # Only sample if consideration sets less than n_alts
-  if(n_alts < nrow(df_alts))
-    df_alts = slice_sample(df_alts, n = n_alts) 
-  
-  out = bind_rows(choices, df_alts) %>%
-    left_join(trip_other, by = c("observer_id"))
-  
-  return(out)
-}
-#-------------------------------------------------------------------------------
-
-# Import data
-
-# Person-trips
-df_pt <- read_csv("./data/processed/ab-ebdusers-person-trips.csv")
-# Travel costs
-df_travel_costs <- read_csv("./data/processed/ab-ebd-travel-costs.csv")
-# User postal codes
-df_pc_sub <- read_csv("./data/processed/ab-ebdusers-pc-locations.csv")
-# Euclidean distances
-df_euc_dist <- read_csv("./data/processed/pc-hotspot-euclidean-distances.csv")
-# All hotspot locations
-df_hot_loc <- read_csv("./data/processed/ab-ebd-hotspot-locations.csv")
-# Number of species monthly
-df_hot_loc_n_species <- read_csv("./data/processed/n_species_monthly.csv")
-# Number of species
-df_uniq_spec <- read_csv("./data/processed/n_species_loc.csv")
-#number of trips
-df_num_trips <- read_csv("./data/processed/num_trips_indi.csv")
-
-#-------------------------------------------------------------------------------
-# Travel costs
-# Not unique so keep only distinct values
-df_costs <- df_travel_costs %>% 
-  distinct(locality_id, postal_code, .keep_all = T) %>%
-  select(locality_id, postal_code, cost_total, hours, km)
-# create postal code-id table
-df_pc_id = df_pc_sub %>%
-  select(-longitude, -latitude)
-# Retrieve relevant person-trips (have postal codes, between 5 - 120 km) 
-#(total trips : 39,835)
 df_pt_rel <- df_pt %>%
   left_join(df_pc_sub, by = "observer_id") %>%
   # Filter out trips where we don't have postal code info; might want these later though.
@@ -104,175 +42,80 @@ df_pt_rel <- df_pt %>%
   filter(euc_distance_km <= travel_cutoff_hi & euc_distance_km >= travel_cutoff_lo) %>%
   select(observer_id, observation_date, locality_id, locality) # missing Kanaskis travel costs. 
 
-# check unique hotspots within relevant trips(878)
-df_num_hot <- df_pt_rel%>%
-  group_by(locality_id)%>%
-  tally()
-df_num_species <- read_csv("./data/processed/n_species_loc.csv")
-summary(df_num_species)
-df_num_species_set <- df_num_hot%>%
-  left_join(df_num_species,by =c("locality_id"))
-summary(df_num_species_set)
-write_csv(df_num_species_set, "data/processed/num_species_set.csv")
+# Calculate trip counts by month-year 
 
-
-# check unique birders within the relevant trips (404)
-Df_num_birders <- df_pt_rel%>%
-  group_by(observer_id)%>%
-  tally()
-
-# check the total number of trips
-sum(df_num_hot$n)
-
-# Create dataframe with chosen trips
-df_trip <- df_pt_rel %>%
+df_trip_counts <- df_pt_rel %>%
   mutate(month = as.character(month(observation_date, label = TRUE)),
          year = year(observation_date)) %>%
-  group_by(observer_id, month, year) %>%
-  mutate(choice = 1,
-         choice_occasion = seq(n())) %>%
-  ungroup(.) %>%
-  mutate(month = factor(month, levels = month.abb),
-         year = factor(year)) %>%
-  # Make sure we have travel cost for trip
-  left_join(df_pc_id, by = "observer_id") %>%
-  left_join(df_costs, by = c("postal_code", "locality_id")) %>%
-  filter(!is.na(cost_total)) %>%
-  select(observer_id, locality_id, month, year, choice_occasion, choice)   
+  group_by(observer_id, locality_id, month, year) %>%
+  tally()
 
-#------------------------------------------------------------------------------
-# Create dataframe for consideration sets
+#-------------------------------------------------------------------------------
+
+# Construct large (!) choice set matrix for modeling
+
 # Vector of hotspots - 1,227 total.
 locality_id <- df_hot_loc %>% pull(locality_id)
 
 # Vector of unique users - 404 total.
 observer_id <- df_pt_rel %>% select(observer_id) %>% distinct() %>% pull()
 
-df_consideration_sets <- crossing(observer_id, locality_id) %>%
-  left_join(df_pc_id, by = "observer_id") %>%
+# Earliest trips
+earliest <- df_pt_rel %>%
+  group_by(observer_id) %>%
+  summarise(earliest_trip = floor_date(min(observation_date), unit = "month")) 
+
+# Vector of years
+year <- seq(2009, 2020, 1)
+# Vector of months
+month <- month.abb
+
+# Travel costs
+df_costs <- df_travel_costs %>% select(locality_id, postal_code, cost_total)
+
+# Construct matrix
+df_modeling <- crossing(observer_id, locality_id) %>%
+  left_join(df_pc_sub, by = "observer_id") %>%
+  select(-c(latitude, longitude)) %>%
   left_join(df_euc_dist, by = c("postal_code", "locality_id")) %>%
-  # Remove missing cost data
+  # Only keep combos we're interested (i.e. 1-200km)
+  filter(euc_distance_km <= travel_cutoff_hi & euc_distance_km >= travel_cutoff_lo) %>%
+  crossing(month, year) %>%
+  # Truncate at Jan 2020
+  filter(!(year == "2020" & !month == "Jan")) %>%
   left_join(df_costs, by = c("postal_code", "locality_id")) %>%
-  filter(!is.na(cost_total))
+  select(observer_id, locality_id, month, year, cost_total) %>%
+  left_join(df_trip_counts, by = c("observer_id", "locality_id", "month", "year")) %>%
+  mutate(n_trips = ifelse(is.na(n), 0, n)) %>%
+  select(-n) %>%
+  mutate(month = factor(month, levels = month.abb),
+         year = factor(year)) %>%
+  arrange(observer_id, locality_id, month, year) %>%
+  # Truncate choices by when each observer's earliest trip was
+  mutate(choice_date = as.Date(paste0("01", " ", month, " ", year), format = "%d %b %Y")) %>%
+  left_join(earliest, by = "observer_id") %>%
+  mutate(relevant_choice = ifelse(earliest_trip <= choice_date, 1, 0)) %>%
+  filter(relevant_choice == "1") %>%
+  select(observer_id:n_trips)
 
-# Only keep combos we're interested 
-if(consider_time == 1){ #  by time
-  df_consideration_sets <- df_consideration_sets %>%
-    filter(hours <= travel_hours_hi & hours >= travel_hours_lo) %>%
-    select(observer_id, locality_id)
-  
-} else if (consider_time == 0){ # by distance
-  df_consideration_sets <- df_consideration_sets %>%
-    filter(euc_distance_km <= travel_cutoff_hi & euc_distance_km >= travel_cutoff_lo) %>%
-    select(observer_id, locality_id)
-}
+# Investigate people with missing travel cost data
+df_test = df_modeling %>%
+  filter(is.na(cost_total)) %>%
+  distinct(observer_id) %>%
+  left_join(df_pc_sub, by = "observer_id")
 
-#-------------------------------------------------------------------------------
-# Sample consideration sets
-df_trip_list <- split(df_trip, seq(nrow(df_trip)))
+hist(df_modeling$cost_total)
 
-plan(multisession, workers = n_workers)
-
-df_modeling = future_map_dfr(df_trip_list, SampleAlternatives, 
-                             consideration_sets = df_consideration_sets, 
-                             n_alts = n_alts,
-                             .options = furrr_options(seed = TRUE))
-closeAllConnections()
-
-# Export
-write_csv(df_modeling, "./data/processed/df_modeling.csv")
-
-#-------------------------------------------------------------------------------
-# Add back travel costs
-df_modeling = df_modeling %>%  
-  left_join(df_pc_id, by = "observer_id") %>%
-  left_join(df_costs, by = c("postal_code", "locality_id")) %>%
-  select(-postal_code)
-
-# Should all be 1
-df_modeling %>%
-  group_by(observer_id, year, month, choice_occasion) %>%
-  summarise(choice = sum(choice)) %>%
-  group_by(choice) %>%
-  tally()
-#-------------------------------------------------------------------------------
-df_modeling = df_modeling %>%
-  left_join(df_uniq_spec, by = "locality_id")
-
-#df_modeling = df_modeling %>%
-#left_join(df_num_trips, by = "observer_id")
-
-df_modeling = df_modeling%>%
-  mutate(month = case_when(month == "Jan"~1,
-                           month == "Feb"~1,
-                           month == "Mar"~1,
-                           month == "Apr"~2,
-                           month == "May"~2,
-                           month == "Jun"~2,
-                           month == "Jul"~3,
-                           month == "Aug"~3,
-                           month == "Sep"~3,
-                           month == "Oct"~4,
-                           month == "Nov"~4,
-                           month == "Dec"~4))
-
-#-------------------------------------------------------------------------------
-#Descriptive statistics of consideration set
-#mean trvel time
-mean(df_modeling$hours)
-#SD of travel time
-sd(df_modeling$hours)
-#mean distance
-mean(df_modeling$km)
-#sd distance
-sd(df_modeling$km)
-#mean cost
-mean(df_modeling$cost_total)
-sd(df_modeling$cost_total)
-#mean number of species
-mean(df_hot_loc_n_species$n_species)
-sd(df_hot_loc_n_species$n_species)
-
-#-------------------------------------------------------------------------------
-# Prepare data for apollo
-df_modeling = df_modeling %>%  
-  arrange(observer_id, month, year, choice_occasion, locality_id) %>%
-  group_by(observer_id, year, month, choice_occasion)  %>% 
-  mutate(choice_id = cur_group_id(),
-         alt = seq(n()),
-         choice = choice * alt) %>%
-  ungroup(.)
-
-# Create travel cost in wide format
-df_tc = df_modeling %>%
-  pivot_wider(choice_id, names_from = "alt", 
-              names_prefix = "tc_",
-              values_from = "cost_total")
-#create num_species in wide format
-df_species = df_modeling %>%
-  pivot_wider(choice_id, names_from = "alt", 
-              names_prefix = "sr_",
-              values_from = "n_species")
+df_test = df_modeling %>%
+  group_by(n_trips) %>%
+  summarise(count = n()) 
 
 
-# Need availability because some people do not have n_alts alternatives in consideration sets
-df_avail =  df_modeling %>%
-  pivot_wider(choice_id, names_from = "alt", 
-              names_prefix = "avail_",
-              values_from = "cost_total") %>%
-  mutate_at(vars(contains('avail_')), ~(ifelse(is.na(.), 0, 1)))
 
-summary(df_avail)
 
-# return chosen alternative
-df_choice = df_modeling %>%
-  filter(choice > 0) %>%
-  select(observer_id, choice_id, choice, month) 
 
-df_apollo = df_choice %>%
-  left_join(df_tc, by = "choice_id") %>%
-  left_join(df_species, by = "choice_id")%>%
-  left_join(df_avail, by = "choice_id")
 
-#make changes to file name depend on n_alt used above
-write_csv(df_apollo, "data/processed/ApolloData_nalt5.csv")
+
+
+
+

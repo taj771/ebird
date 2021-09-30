@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# Title: model 1
+# Title: model 4
 # As start we used n_alt = 5, when replicating make sure to ajust as appropriate
 # Date: 9/29/2021
 
@@ -104,25 +104,6 @@ df_pt_rel <- df_pt %>%
   filter(euc_distance_km <= travel_cutoff_hi & euc_distance_km >= travel_cutoff_lo) %>%
   select(observer_id, observation_date, locality_id, locality) # missing Kanaskis travel costs. 
 
-# check unique hotspots within relevant trips(878)
-df_num_hot <- df_pt_rel%>%
-  group_by(locality_id)%>%
-  tally()
-df_num_species <- read_csv("./data/processed/n_species_loc.csv")
-summary(df_num_species)
-df_num_species_set <- df_num_hot%>%
-  left_join(df_num_species,by =c("locality_id"))
-summary(df_num_species_set)
-write_csv(df_num_species_set, "data/processed/num_species_set.csv")
-
-
-# check unique birders within the relevant trips (404)
-Df_num_birders <- df_pt_rel%>%
-  group_by(observer_id)%>%
-  tally()
-
-# check the total number of trips
-sum(df_num_hot$n)
 
 # Create dataframe with chosen trips
 df_trip <- df_pt_rel %>%
@@ -264,6 +245,7 @@ df_avail =  df_modeling %>%
 
 summary(df_avail)
 
+
 # return chosen alternative
 df_choice = df_modeling %>%
   filter(choice > 0) %>%
@@ -276,3 +258,6 @@ df_apollo = df_choice %>%
 
 #make changes to file name depend on n_alt used above
 write_csv(df_apollo, "data/processed/ApolloData_nalt5.csv")
+
+
+

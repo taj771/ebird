@@ -1,10 +1,9 @@
 #-------------------------------------------------------------------------------
 
-# Title: 04_modeling
-# Date: April 2020
+# Title: Model 1
+# Date: 9/29/2021
 
-# Description: Model site choice
-
+# Description: Clean travel data and merger travel cost for relevant 
 #-------------------------------------------------------------------------------
 
 # Load packages
@@ -12,9 +11,7 @@ library(tidyverse)
 library(lubridate)
 
 #-------------------------------------------------------------------------------
-
 # Import data
-
 # Person-trips
 df_pt <- read_csv("./data/processed/ab-ebdusers-person-trips.csv")
 
@@ -31,6 +28,7 @@ df_euc_dist <- read_csv("./data/processed/pc-hotspot-euclidean-distances.csv")
 df_hot_loc <- read_csv("./data/processed/ab-ebd-hotspot-locations.csv")
 
 #-------------------------------------------------------------------------------
+#originally set trvel distance as 5km to 120km, make necesssary changes
 travel_cutoff_lo = 5
 travel_cutoff_hi = 120
 

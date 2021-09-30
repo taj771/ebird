@@ -1,17 +1,14 @@
 #-------------------------------------------------------------------------------
-# model 1
-# Title: 04_site choice
-# Make a data set compatable with appolo
+# Title: model 1
 # As start we used n_alt = 5, when replicating make sure to ajust as appropriate
 # Date: 9/29/2021
 
-# Description: Model site choice
+# Description: Make a data set comparable with Apollo
 
 #-------------------------------------------------------------------------------
 #Clear memory 
 #-------------------------------------------------------------------------------
 rm(list = ls())
-
 
 # Load packages
 library(tidyverse)

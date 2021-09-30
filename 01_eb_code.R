@@ -1,53 +1,42 @@
 #-------------------------------------------------------------------------------
+
 # Title: Model 1
-# Date: 09/29/2021
-# Description: Get the number of unique species of a hot spot and number of 
-# species by month
+# Date: 09/30/2021
+
+# Description: Calculate travel costs, plus opportunity cost of time
+
 #-------------------------------------------------------------------------------
 # Load packages
-library(tidyverse)
-library(janitor)
-library(lubridate)
+library(readr)
+library(dplyr)
 #-------------------------------------------------------------------------------
 # Import data
-df_ebd_ab_all = read_csv("./data/base/ebd_CA-AB_prv_relJan-2020_subset.csv")
+# Income data from 2016 general census
+df_income <- read_csv("./data/base/ab-pc-income.csv")
+# Driving distance and time from script 02
+df_drive_dist_labs <- read_csv("./data/processed/ab-ebd-pc-hotspot-driving-dist-time_20-80km.csv") %>%
+  bind_rows(read_csv("./data/processed/ab-ebd-pc-hotspot-driving-dist-time_5-20km.csv"),
+            read_csv("./data/processed/ab-ebd-pc-hotspot-driving-dist-time_80-120km.csv"))
+#hotspot's longitute and latitude(map)
+df_hot_geo <- df_drive_dist_labs%>%
+  select(locality_id, hot_loc)
+write_csv(df_hot_geo, "./data/processed/hotspot_geoc.csv")
+
+# Set parameters
+# These are the initial parameters we set, but it may need to change based on
+# literature 
+yearly_hours <- 2040
+opp_time <- 1/2
+vehicle_cost <- 0.3 
 
 #-------------------------------------------------------------------------------
-# Tidying
-# Subset observations:
-df_ebd_ab_sub <- df_ebd_ab_all %>%
-  # Clean up column names
-  clean_names(case = "snake") %>%
-  # Remove observations pre-2009
-  mutate(observation_date = ymd(observation_date)) %>%
-  filter(observation_date >= "2009-01-01") %>%
-  select(common_name, scientific_name, county, iba_code, bcr_code,
-         locality:observation_date, observer_id, sampling_event_identifier,
-         group_identifier, trip_comments)
 
-# Retrieve number of checklists and unique species for each locality
-df_loc_check <- df_ebd_ab_sub %>%
-  mutate(month = month(observation_date)) %>%
-  filter(locality_type == "H" | locality_type == "P") %>%
-  group_by(locality, locality_id, month) %>%
-  summarise(n_checklist = n_distinct(sampling_event_identifier),
-            n_species = n_distinct(scientific_name))
-
-# remove locality name
-df_loc_check = subset(df_loc_check,select = -c(locality, n_checklist))
-df_loc_check <- df_loc_check%>%
-  group_by(locality_id)
-write_csv(df_loc_check, "data/processed/n_species_monthly.csv")
-
-
-df_unique_species_loc = subset(df_ebd_ab_sub, select = c(scientific_name, locality_id, sampling_event_identifier))%>%
-  group_by(locality_id)%>%
-  summarise(n_checklist = n_distinct(sampling_event_identifier),
-            n_species = n_distinct(scientific_name))
-  
-df_unique_species_loc = subset(df_unique_species_loc, select = -c(n_checklist))
-
-write_csv(df_unique_species_loc, "data/processed/n_species_loc.csv")
-
-  
-
+# Calculate travel costs (opportunity cost of time + driving costs)
+df_travel_costs <- df_drive_dist_labs %>%
+  left_join(df_income, by = "postal_code") %>% # note: missing income info for 7 postal codes (we'll ignore).
+  mutate(cost_time = 2 * opp_time * (med_net_15 / yearly_hours) * hours,
+         cost_driving = 2 * vehicle_cost * km,
+         cost_total = cost_time + cost_driving,
+         cost_total = cost_total) %>%
+  select(locality_id, postal_code, cost_time, cost_driving, cost_total, hours, km)
+write_csv(df_travel_costs, "./data/processed/ab-ebd-travel-costs.csv")

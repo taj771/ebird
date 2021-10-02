@@ -34,7 +34,7 @@ travel_hours_hi = 2 #
 
 # Choose number of non-chosen alternatives to sample
 # originally set it for 5 make changes as it required
-n_alts = 5
+n_alts = 190
 
 #-------------------------------------------------------------------------------
 # Function to sample non-chosen consideration_sets for each person
@@ -257,7 +257,7 @@ df_apollo = df_choice %>%
   left_join(df_avail, by = "choice_id")
 
 #make changes to file name depend on n_alt used above
-write_csv(df_apollo, "data/processed/ApolloData_nalt5.csv")
+write_csv(df_apollo, "data/processed/ApolloData_nalt200.csv")
 
 
 

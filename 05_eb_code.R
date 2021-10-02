@@ -146,6 +146,9 @@ apollo_modelOutput(model)
 #75th percentile = 122
 #maximum = 268
 
+library(pacman)
+p_load(tidyverse, car, apollo, haven, sjmisc)
+
 deltaMethod(model, "(b_sr*1 + b_2nd_sr*1 + b_3rd_sr*1 + b_4th_sr*1)/ -b_tc") 
 
 #TWTP by quarter

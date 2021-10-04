@@ -34,7 +34,7 @@ travel_hours_hi = 2 #
 
 # Choose number of non-chosen alternatives to sample
 # originally set it for 5 make changes as it required
-n_alts = 190
+n_alts = 5
 
 #-------------------------------------------------------------------------------
 # Function to sample non-chosen consideration_sets for each person
@@ -84,6 +84,8 @@ df_hot_loc_n_species <- read_csv("./data/processed/n_species_monthly.csv")
 df_uniq_spec <- read_csv("./data/processed/n_species_loc.csv")
 #number of trips
 df_num_trips <- read_csv("./data/processed/num_trips_indi.csv")
+#number of endangered species 
+df_endan <- read_csv("./data/processed/endangered_species.csv")
 
 #-------------------------------------------------------------------------------
 # Travel costs
@@ -180,6 +182,9 @@ df_modeling %>%
 df_modeling = df_modeling %>%
   left_join(df_uniq_spec, by = "locality_id")
 
+df_modeling = df_modeling %>%
+  left_join(df_endan, by = "locality_id")
+
 #df_modeling = df_modeling %>%
 #left_join(df_num_trips, by = "observer_id")
 
@@ -234,6 +239,12 @@ df_species = df_modeling %>%
   pivot_wider(choice_id, names_from = "alt", 
               names_prefix = "sr_",
               values_from = "n_species")
+#create endangered_species in wide format
+df_endan = df_modeling %>%
+  pivot_wider(choice_id, names_from = "alt", 
+              names_prefix = "es_",
+              values_from = "freq")
+  
 
 
 # Need availability because some people do not have n_alts alternatives in consideration sets
@@ -254,10 +265,11 @@ df_choice = df_modeling %>%
 df_apollo = df_choice %>%
   left_join(df_tc, by = "choice_id") %>%
   left_join(df_species, by = "choice_id")%>%
+  left_join(df_endan, by = "choice_id")%>%
   left_join(df_avail, by = "choice_id")
 
 #make changes to file name depend on n_alt used above
-write_csv(df_apollo, "data/processed/ApolloData_nalt200.csv")
+write_csv(df_apollo, "data/processed/ApolloData_nalt5.csv")
 
 
 

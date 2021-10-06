@@ -29,7 +29,7 @@ apollo_control = list(
 # load the .Rdata 
 #-----------------------------------#
 
-database = read_csv("./data/processed/ApolloData_nalt200.csv")
+database = read_csv("./data/processed/ApolloData_nalt5.csv")
 
 #-----------------------------------#
 # Divide TC by 10 to for convergence

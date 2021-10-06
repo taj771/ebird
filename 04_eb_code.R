@@ -81,11 +81,15 @@ df_hot_loc <- read_csv("./data/processed/ab-ebd-hotspot-locations.csv")
 # Number of species monthly
 df_hot_loc_n_species <- read_csv("./data/processed/n_species_monthly.csv")
 # Number of species
-df_uniq_spec <- read_csv("./data/processed/n_species_loc.csv")
+df_uniq_spec <- read_csv("./data/processed/n_species_loc2.csv")
 #number of trips
-df_num_trips <- read_csv("./data/processed/num_trips_indi.csv")
+#df_num_trips <- read_csv("./data/processed/num_trips_indi.csv")
 #number of endangered species 
 df_endan <- read_csv("./data/processed/endangered_species.csv")
+#endangered_species ratio
+#df_es_rat <- read_csv("./data/processed/endangered_rat.csv")
+#endangered species binary
+#df_endan_spe_bin <- read.csv("./data/processed/endangered_species_binary.csv")
 
 #-------------------------------------------------------------------------------
 # Travel costs
@@ -122,6 +126,14 @@ df_trip <- df_pt_rel %>%
   left_join(df_costs, by = c("postal_code", "locality_id")) %>%
   filter(!is.na(cost_total)) %>%
   select(observer_id, locality_id, month, year, choice_occasion, choice)   
+
+df_trip %>%
+  group_by(year) %>%
+  tally()
+
+df_trip %>%
+  group_by(month) %>%
+  tally()
 
 #------------------------------------------------------------------------------
 # Create dataframe for consideration sets
@@ -185,6 +197,12 @@ df_modeling = df_modeling %>%
 df_modeling = df_modeling %>%
   left_join(df_endan, by = "locality_id")
 
+df_modeling = df_modeling%>%
+  left_join(df_endan_spe_bin, by = "locality_id")
+
+#df_modeling = df_modeling %>%
+  #left_join(df_es_rat, by = "locality_id")
+
 #df_modeling = df_modeling %>%
 #left_join(df_num_trips, by = "observer_id")
 
@@ -239,12 +257,27 @@ df_species = df_modeling %>%
   pivot_wider(choice_id, names_from = "alt", 
               names_prefix = "sr_",
               values_from = "n_species")
+#create num_species2 in wide format
+df_species2 = df_modeling %>%
+  pivot_wider(choice_id, names_from = "alt", 
+              names_prefix = "sr2_",
+              values_from = "n_spe2")
 #create endangered_species in wide format
 df_endan = df_modeling %>%
   pivot_wider(choice_id, names_from = "alt", 
               names_prefix = "es_",
               values_from = "freq")
-  
+#create endangered_species ratio in wide format
+#df_es_rat = df_modeling %>%
+  #pivot_wider(choice_id, names_from = "alt", 
+              #names_prefix = "esr_",
+              #values_from = "es_rat")
+#create endangered_species ratio in wide format
+#df_endan_spe_bin = df_modeling %>%
+#pivot_wider(choice_id, names_from = "alt", 
+#names_prefix = "esb_",
+#values_from = "es_binary")
+
 
 
 # Need availability because some people do not have n_alts alternatives in consideration sets
@@ -265,7 +298,10 @@ df_choice = df_modeling %>%
 df_apollo = df_choice %>%
   left_join(df_tc, by = "choice_id") %>%
   left_join(df_species, by = "choice_id")%>%
+  left_join(df_species2, by = "choice_id")%>%
   left_join(df_endan, by = "choice_id")%>%
+  #left_join(df_es_rat, by = "choice_id")%>%
+  #left_join(df_endan_spe_bin, by = "choice_id")%>%
   left_join(df_avail, by = "choice_id")
 
 #make changes to file name depend on n_alt used above

@@ -27,9 +27,10 @@ summarise(df_hot_loc)
 #number of species monts
 df_hot_loc <- read.csv("./data/processed/n_species_monthly.csv")
 # locations in choice set
+df_modeling <- read.csv("./data/processed/df_modeling.csv")
+library(dplyr)
 df_hot_loc_set <- df_modeling%>%
   select(locality_id)
-library(dplyr)
 df_hot_loc_set = df_hot_loc_set%>%
   distinct(locality_id)
 df_num_species <- df_hot_loc_set%>%
@@ -39,14 +40,13 @@ library(hrbrthemes)
 df_num_species %>%
   ggplot( aes(x=n_species)) +
   geom_histogram( binwidth=3, color="#e9ecef") +
-  theme(
-    plot.title = element_text(size=15)
-  )
-
+  theme(plot.title = element_text(size=15)) + ggtitle("Number of Species") +
+  labs(x="Number of species", y = "count")
 #number of species monts - boxplot
 df_hot_loc_month <- read.csv("./data/processed/n_species_monthly.csv")
 df_num_species_month <- df_hot_loc_set%>%
   left_join(df_hot_loc_month,by = c("locality_id"))
+boxplot(df_num_species_month$n_species ~ month, data = df_num_species_month )
 #------------------------------------------------------------------------------
 # graph of parameter estimations with different n_alt
 

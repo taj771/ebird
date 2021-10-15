@@ -3,7 +3,7 @@
 rm(list = ls())
 # Import data
 # Hot locations
-df_hot_loc <- read.csv("./data/processed/num_species_set.csv")
+#df_hot_loc <- read.csv("./data/processed/num_species_set.csv")
 # ab_all data with scientific name
 df_ebd_ab_all = read.csv("./data/base/ebd_CA-AB_prv_relJan-2020_subset.csv")
 
@@ -37,37 +37,6 @@ df_ebd_ab_all <- df_ebd_ab_all%>%
                                  scientific_name == "Grus americana"~26,
                                  scientific_name == "Empidonax traillii"~27))
 
-#above include species at risk / sensetive/ endangered so create a dummy only 
-# with endangered species
-library(dplyr)
-#df_ebd_ab_all <- df_ebd_ab_all%>%
-  #mutate(end_bin = case_when(scientific_name == "Strix varia"~0,
-                                 #scientific_name == "Dendroica castanea"~ 0,
-                                 #scientific_name == "Dendroica virens"~ 0,
-                                 #scientific_name == "Certhia americana"~ 0,
-                                 #scientific_name == "Athene cunicularia"~ 1,
-                                 #scientific_name == "Cardellina canadensis"~ 0,
-                                 #scientific_name == "Dendroica tigrina"~ 0,
-                                 #scientific_name == "Calcarius ornatus"~ 0,
-                                 #scientific_name == "Buteo regalis"~ 1,
-                                 #scientific_name == "Centrocercus urophasianus"~ 1,
-                                 #scientific_name == "Histrionicus histrionicus"~ 0,
-                                 #scientific_name == "Lanius ludovicianus"~ 0,
-                                 #scientific_name == "Numenius americanus"~ 0,
-                                 #scientific_name == "Charadrius montanus"~1,
-                                 #scientific_name == "Glaucidium gnoma"~0,
-                                 #scientific_name == "Falco peregrinus"~1,
-                                 #scientific_name == "Charadrius melodus"~1,
-                                 #scientific_name == "Falco mexicanus"~0,
-                                 #scientific_name == "Oreoscoptes montanus"~0,
-                                 #scientific_name == "Asio flammeus"~0,
-                                 #scientific_name == "Anthus spragueii"~0,
-                                 #scientific_name == "Cygnus buccinator"~0,
-                                 #scientific_name == "Cathartes aura"~0,
-                                 #scientific_name == "Aechmophorus occidentalis"~1,
-                                 #scientific_name == "Melanitta fusca"~0,
-                                 #scientific_name == "Grus americana"~1,
-                                 #scientific_name == "Empidonax traillii"~0))
 
 
 #remove hotspot without endangered species
@@ -93,6 +62,55 @@ df_ebd_ab_all <- df_ebd_ab_all%>%
   count("locality_id")
 
 write.csv(df_ebd_ab_all, "data/processed/endangered_species.csv")
+
+#above include species at risk / sensetive/ endangered so create a dummy only 
+# with endangered species
+
+df_ebd_ab_all = read.csv("./data/base/ebd_CA-AB_prv_relJan-2020_subset.csv")
+
+library(dplyr)
+df_ebd_ab_all <- df_ebd_ab_all%>%
+  mutate(end_bin = case_when(scientific_name == "Strix varia"~0,
+                             scientific_name == "Dendroica castanea"~ 0,
+                             scientific_name == "Dendroica virens"~ 0,
+                             scientific_name == "Certhia americana"~ 0,
+                             scientific_name == "Athene cunicularia"~ 1,
+                             scientific_name == "Cardellina canadensis"~ 0,
+                             scientific_name == "Dendroica tigrina"~ 0,
+                             scientific_name == "Calcarius ornatus"~ 0,
+                             scientific_name == "Buteo regalis"~ 1,
+                             scientific_name == "Centrocercus urophasianus"~ 1,
+                             scientific_name == "Histrionicus histrionicus"~ 0,
+                             scientific_name == "Lanius ludovicianus"~ 0,
+                             scientific_name == "Numenius americanus"~ 0,
+                             scientific_name == "Charadrius montanus"~1,
+                             scientific_name == "Glaucidium gnoma"~0,
+                             scientific_name == "Falco peregrinus"~1,
+                             scientific_name == "Charadrius melodus"~1,
+                             scientific_name == "Falco mexicanus"~0,
+                             scientific_name == "Oreoscoptes montanus"~0,
+                             scientific_name == "Asio flammeus"~0,
+                             scientific_name == "Anthus spragueii"~0,
+                             scientific_name == "Cygnus buccinator"~0,
+                             scientific_name == "Cathartes aura"~0,
+                             scientific_name == "Aechmophorus occidentalis"~1,
+                             scientific_name == "Melanitta fusca"~0,
+                             scientific_name == "Grus americana"~1,
+                             scientific_name == "Empidonax traillii"~0))
+
+df_ebd_ab_all <- df_ebd_ab_all%>%
+  replace(is.na(.),0)
+
+#get the unique endangered species per hospot -may need to active if # of enddan
+# is under consideration
+library(dplyr)
+df_ebd_ab_all <- df_ebd_ab_all%>%
+  distinct(locality_id,end_bin)
+
+#write csv with endangers species bianry
+write.csv(df_ebd_ab_all, "data/processed/endangered_species_binary.csv")
+
+
 
 
 

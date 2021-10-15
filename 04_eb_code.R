@@ -236,6 +236,12 @@ sd(df_modeling$cost_total)
 #mean number of species
 mean(df_hot_loc_n_species$n_species)
 sd(df_hot_loc_n_species$n_species)
+#mean number of bird species at risk
+mean(df_endan$freq)
+sd(df_endan$freq)
+#mean number of hotspot with endangered species
+mean(df_endan_spe_bin$end_bin)
+sd(df_endan_spe_bin$end_bin)
 
 #-------------------------------------------------------------------------------
 # Prepare data for apollo

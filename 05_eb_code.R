@@ -60,10 +60,13 @@ J = length(unique(database$choice))
 #-----------------------------------#
 apollo_beta = c(b_tc = 0,
                 b_sr = 0,
+                b_sr2 = 0,
+                b_spe_ri =0,
+                b_end = 0,
                 b_2nd_sr = 0,
                 b_3rd_sr = 0,
                 b_4th_sr = 0)
-                
+
 
 #-----------------------------------#
 #Home is a fixed parameter 
@@ -91,7 +94,7 @@ apollo_probabilities=function(apollo_beta, apollo_inputs, functionality="estimat
   ### Create list of probabilities P
   P = list()
   
-#  J = 3 # need this if parallel (nCores > 1 in apollo_controls)
+  #  J = 3 # need this if parallel (nCores > 1 in apollo_controls)
   
   V= list( ) 
   avail = list()
@@ -99,6 +102,9 @@ apollo_probabilities=function(apollo_beta, apollo_inputs, functionality="estimat
   # set up utilities for hotspots
   for ( j in 1:J ) {
     V[[ paste0('choice', j ) ]] = b_tc * get(paste0('tc_', j)) + b_sr * get(paste0("sr_", j)) +
+      b_sr2 * get(paste0("sr2_", j)) +
+      b_spe_ri * get(paste0("es_", j))+
+      b_end * get(paste0("esb_", j))+
       b_2nd_sr * get(paste0("sr_", j))*(month == 2) +
       b_3rd_sr * get(paste0("sr_", j))*(month == 3) +
       b_4th_sr * get(paste0("sr_", j))*(month == 4) 

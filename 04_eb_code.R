@@ -89,7 +89,7 @@ df_endan <- read_csv("./data/processed/endangered_species.csv")
 #endangered_species ratio
 #df_es_rat <- read_csv("./data/processed/endangered_rat.csv")
 #endangered species binary
-#df_endan_spe_bin <- read.csv("./data/processed/endangered_species_binary.csv")
+df_endan_spe_bin <- read.csv("./data/processed/endangered_species_binary.csv")
 
 #-------------------------------------------------------------------------------
 # Travel costs
@@ -273,10 +273,10 @@ df_endan = df_modeling %>%
               #names_prefix = "esr_",
               #values_from = "es_rat")
 #create endangered_species ratio in wide format
-#df_endan_spe_bin = df_modeling %>%
-#pivot_wider(choice_id, names_from = "alt", 
-#names_prefix = "esb_",
-#values_from = "es_binary")
+df_endan_spe_bin = df_modeling %>%
+pivot_wider(choice_id, names_from = "alt", 
+names_prefix = "esb_",
+values_from = "end_bin")
 
 
 
@@ -301,7 +301,7 @@ df_apollo = df_choice %>%
   left_join(df_species2, by = "choice_id")%>%
   left_join(df_endan, by = "choice_id")%>%
   #left_join(df_es_rat, by = "choice_id")%>%
-  #left_join(df_endan_spe_bin, by = "choice_id")%>%
+  left_join(df_endan_spe_bin, by = "choice_id")%>%
   left_join(df_avail, by = "choice_id")
 
 #make changes to file name depend on n_alt used above

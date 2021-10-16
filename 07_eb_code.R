@@ -51,9 +51,6 @@ library(dplyr)
 df_ebd_ab_all <- df_ebd_ab_all%>%
   distinct(locality_id,endang_code)
 
-#Binary variable - endangered species
-#df_ebd_ab_all <- df_ebd_ab_all%>%
-  #distinct(locality_id,end_bin)
 
 #get the total number of unique species per hotspot
 library(plyr)
@@ -62,6 +59,12 @@ df_ebd_ab_all <- df_ebd_ab_all%>%
   count("locality_id")
 
 write.csv(df_ebd_ab_all, "data/processed/endangered_species.csv")
+
+#to get the number of bird species at risk within the consideration set
+df <- read.csv("./data/processed/num_hotspot.csv" )%>%
+  left_join(df_ebd_ab_all,by=c("locality_id"))
+summary(df)
+
 
 #above include species at risk / sensetive/ endangered so create a dummy only 
 # with endangered species
@@ -110,63 +113,10 @@ df_ebd_ab_all <- df_ebd_ab_all%>%
 #write csv with endangers species bianry
 write.csv(df_ebd_ab_all, "data/processed/endangered_species_binary.csv")
 
-
-
-
-
-#filter end species details that limited to interested hotspot (878)
-#df_endan_spe <- df_hot_loc %>%
-  #left_join(df_ebd_ab_all, by = c("locality_id"))%>%
-  #select(locality_id,freq)
-#filter end species binary details that limited to interested hotspot (878)
-#df_endan_spe <- df_hot_loc %>%
-  #left_join(df_ebd_ab_all, by = c("locality_id"))%>%
-  #select(locality_id,end_bin)
-#replace for the hotpots where endangerd species are absent 
-df_endan_spe <- df_endan_spe%>%
-  replace(is.na(.),0)
-#remove multiple rows with same location ID
-df_endan_spe <- df_endan_spe%>%
-  distinct(locality_id,end_bin == 1, .keep_all = TRUE)
-
-df_endan_spe <- df_endan_spe%>%
-  rename(tf = `end_bin == 1`)
-df_endan_spe <- df_endan_spe%>%
-  mutate(es_binary = case_when(tf == "TRUE"~1,
-                               ))
-df_endan_spe <- df_endan_spe%>%
-  na.omit(df_endan_spe)%>%
-  select(locality_id,es_binary)
-
-df_endan_spe_bin <- df_hot_loc %>%
-  left_join(df_endan_spe, by = c("locality_id"))%>%
-  select(locality_id,es_binary)
-
-df_endan_spe_bin <- df_endan_spe_bin%>%
-  replace(is.na(.),0)%>%
-  select(locality_id,es_binary)
-#write csv with endangers species bianry
-write.csv(df_endan_spe_bin, "data/processed/endangered_species_binary.csv")
-
-
-
-
-# adding number of spe square term
-df_uniq_spec <- read_csv("./data/processed/n_species_loc.csv")
-df_uniq_spec <- df_uniq_spec %>%
-  mutate(n_spe2 =n_species*n_species)
-write.csv(df_uniq_spec, "data/processed/n_species_loc2.csv")
-
-#creating n_endangered_sp/total_spe
-
-df_endan_spe = read.csv("./data/processed/endangered_species.csv")
-df_uniq_spec <- read_csv("./data/processed/n_species_loc.csv")
-
-df_endan_spe_rat <- df_endan_spe %>%
-  left_join(df_uniq_spec, by = "locality_id")%>%
-  mutate(es_rat = freq/n_species)%>%
-  select(locality_id,es_rat)
-
-write.csv(df_endan_spe_rat, "data/processed/endangered_rat.csv")
+#to get the number of bird species at risk within the consideration set
+df <- read.csv("./data/processed/num_hotspot.csv" )%>%
+  left_join(df_ebd_ab_all,by=c("locality_id"))%>%
+summary(df)
+  
 
 

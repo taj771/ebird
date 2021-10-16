@@ -17,13 +17,15 @@ summary(df_num_species)
 df_num_species_set <- df_num_hot%>%
   left_join(df_num_species,by =c("locality_id"))
 summary(df_num_species_set)
-write_csv(df_num_species_set, "data/processed/num_species_set.csv")
+
+write.csv(df_num_species_set, "data/processed/num_species_set.csv")
 
 #-----------------------------------------------------------------------------
 # graps 
 # Number of species - Histogram
 df_hot_loc <- read.csv("./data/processed/n_species_loc.csv")
-summarise(df_hot_loc)
+library(dplyr)
+summary(df_hot_loc)
 #number of species monts
 df_hot_loc <- read.csv("./data/processed/n_species_monthly.csv")
 # locations in choice set
@@ -37,16 +39,25 @@ df_num_species <- df_hot_loc_set%>%
   left_join(df_hot_loc, by = c("locality_id"))
 library(ggplot2)
 library(hrbrthemes)
-df_num_species %>%
+#distribution of number of speceis withn 878 hotlocation
+#if want distribution of total set please change "df_num_species_set to "df_num_species
+df_num_species_set %>%
   ggplot( aes(x=n_species)) +
   geom_histogram( binwidth=3, color="#e9ecef") +
   theme(plot.title = element_text(size=15)) + ggtitle("Number of Species") +
   labs(x="Number of species", y = "count")
 #number of species monts - boxplot
 df_hot_loc_month <- read.csv("./data/processed/n_species_monthly.csv")
-df_num_species_month <- df_hot_loc_set%>%
+#boxplot for hotspots within the consideration set, if want for full set change
+#df_num_hot to df_hot_loc_set
+df_num_species_month <- df_num_hot%>%
   left_join(df_hot_loc_month,by = c("locality_id"))
-boxplot(df_num_species_month$n_species ~ month, data = df_num_species_month )
+df <- df_num_species_month%>%
+  distinct(locality_id)
+boxplot(df_num_species_month$n_species ~ month, data = df_num_species_month,
+        main = "Number of bird Species",
+        ylab = "Number of birds species",
+        xlab = "Month")
 #------------------------------------------------------------------------------
 # graph of parameter estimations with different n_alt
 

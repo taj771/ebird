@@ -29,7 +29,7 @@ apollo_control = list(
 # load the .Rdata 
 #-----------------------------------#
 
-database = read_csv("./data/processed/ApolloData_nalt5.csv")
+database = read_csv("./data/processed/ApolloData_nalt150.csv")
 
 #-----------------------------------#
 # Divide TC by 10 to for convergence
@@ -61,7 +61,7 @@ J = length(unique(database$choice))
 apollo_beta = c(b_tc = 0,
                 b_sr = 0,
                 b_sr2 = 0,
-                b_spe_ri =0,
+                b_spe_ri = 0,
                 b_end = 0,
                 b_2nd_sr = 0,
                 b_3rd_sr = 0,

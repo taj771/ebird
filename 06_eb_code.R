@@ -1,17 +1,18 @@
 #-------------------------------------------------------------------------------
 # Title: model 6
-# please run model 4 before run this as this use some output from thre
 # Date: 9/29/2021
-
 # Description: Graphs and summary statistics
 
 #-------------------------------------------------------------------------------
 
 # check unique hotspots within relevant trips(878)
 df_hot_loc <- read_csv("./data/processed/ab-ebd-hotspot-locations.csv")
+df_pt_rel <- read.csv("data/processed/df_pt_rel.csv")
+
 df_num_hot <- df_pt_rel%>%
   group_by(locality_id)%>%
   tally()
+write.csv(df_num_hot,"./data/processed/num_hotspot.csv" )
 df_num_species <- read_csv("./data/processed/n_species_loc.csv")
 summary(df_num_species)
 df_num_species_set <- df_num_hot%>%
@@ -39,7 +40,7 @@ df_num_species <- df_hot_loc_set%>%
   left_join(df_hot_loc, by = c("locality_id"))
 library(ggplot2)
 library(hrbrthemes)
-#distribution of number of speceis withn 878 hotlocation
+#distribution of number of speceis withn 878 hotspot
 #if want distribution of total set please change "df_num_species_set to "df_num_species
 df_num_species_set %>%
   ggplot( aes(x=n_species)) +
@@ -58,6 +59,18 @@ boxplot(df_num_species_month$n_species ~ month, data = df_num_species_month,
         main = "Number of bird Species",
         ylab = "Number of birds species",
         xlab = "Month")
+
+
+#graph n_trips and n_species
+
+df <- read.csv("data/processed/num_species_set.csv")
+df[,c(3,4)] <- log(df[,c(3,4)])
+ggplot(data = df, aes(x = n_species, y = n)) + geom_point() + scale_x_log10() + scale_y_log10()
+plot(df$n_species,df$n, main = "Number of trip vs number of species",
+     xlab = "Number of species",ylab = "Number of trips")
+abline(lm(n~n_species,data = df),col = "red")
+
+
 #------------------------------------------------------------------------------
 # graph of parameter estimations with different n_alt
 

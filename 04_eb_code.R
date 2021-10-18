@@ -34,7 +34,7 @@ travel_hours_hi = 2 #
 
 # Choose number of non-chosen alternatives to sample
 # originally set it for 5 make changes as it required
-n_alts = 10
+n_alts = 7
 
 #-------------------------------------------------------------------------------
 # Function to sample non-chosen consideration_sets for each person
@@ -110,6 +110,9 @@ df_pt_rel <- df_pt %>%
   filter(euc_distance_km <= travel_cutoff_hi & euc_distance_km >= travel_cutoff_lo) %>%
   select(observer_id, observation_date, locality_id, locality) # missing Kanaskis travel costs. 
 
+#write csv for use in code 6
+write.csv(df_pt_rel,"data/processed/df_pt_rel.csv")
+
 
 # Create dataframe with chosen trips
 df_trip <- df_pt_rel %>%
@@ -126,6 +129,8 @@ df_trip <- df_pt_rel %>%
   left_join(df_costs, by = c("postal_code", "locality_id")) %>%
   filter(!is.na(cost_total)) %>%
   select(observer_id, locality_id, month, year, choice_occasion, choice)   
+
+
 
 df_trip %>%
   group_by(year) %>%
@@ -311,7 +316,7 @@ df_apollo = df_choice %>%
   left_join(df_avail, by = "choice_id")
 
 #make changes to file name depend on n_alt used above
-write_csv(df_apollo, "data/processed/ApolloData_nalt10.csv")
+write_csv(df_apollo, "data/processed/ApolloData_nalt7.csv")
 
 
 

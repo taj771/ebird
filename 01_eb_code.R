@@ -1,15 +1,12 @@
-#-------------------------------------------------------------------------------
-
-# Title: Model 1
-# Date: 09/30/2021
-
-# Description: Calculate travel costs, plus opportunity cost of time
-
-#-------------------------------------------------------------------------------
+###############################################################################
+# Title: Model 1                                                          #####
+# Date: 09/30/2021                                                        #####
+# Description: Calculate travel costs, plus opportunity cost of time      #####
+###############################################################################
 # Load packages
 library(readr)
 library(dplyr)
-#-------------------------------------------------------------------------------
+###############################################################################
 # Import data
 # Income data from 2016 general census
 df_income <- read_csv("./data/base/ab-pc-income.csv")
@@ -21,17 +18,18 @@ df_drive_dist_labs <- read_csv("./data/processed/ab-ebd-pc-hotspot-driving-dist-
 df_hot_geo <- df_drive_dist_labs%>%
   select(locality_id, hot_loc)
 write_csv(df_hot_geo, "./data/processed/hotspot_geoc.csv")
-
-# Set parameters
-# These are the initial parameters we set, but it may need to change based on
-# literature 
+###############################################################################
+# Set parameters                                                             ##
+# These are the initial parameters we set, but it may need to change based on##
+# literature                                                                 ##
+###############################################################################
 yearly_hours <- 2040
 opp_time <- 1/2
 vehicle_cost <- 0.3 
 
-#-------------------------------------------------------------------------------
-
-# Calculate travel costs (opportunity cost of time + driving costs)
+###############################################################################
+# Calculate travel costs (opportunity cost of time + driving costs)          ##
+###############################################################################
 df_travel_costs <- df_drive_dist_labs %>%
   left_join(df_income, by = "postal_code") %>% # note: missing income info for 7 postal codes (we'll ignore).
   mutate(cost_time = 2 * opp_time * (med_net_15 / yearly_hours) * hours,

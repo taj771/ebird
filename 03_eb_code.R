@@ -1,79 +1,86 @@
-#-------------------------------------------------------------------------------
-
-# Title: Model 3
-# Date: 9/29/2021
-
-# Description: Clean travel data and merger travel cost for relevant 
-#-------------------------------------------------------------------------------
-
-# Load packages
+################################################################################
+# Title: Model 3                                                               #
+# Date: 9/29/2021                                                              #
+# Description: Clean travel data and merger travel cost for relevant trips     #
+################################################################################
+# Load packages                                                                #
+################################################################################
 library(tidyverse)
 library(lubridate)
-
-#-------------------------------------------------------------------------------
-# Import data
-# Person-trips
-df_pt <- read_csv("./data/processed/ab-ebdusers-person-trips.csv")
-
-# Travel costs
-df_travel_costs <- read_csv("./data/processed/ab-ebd-travel-costs.csv")
-
-# User postal codes
+################################################################################
+# Import data                                                                  #
+# Person-trips                                                                 #
+################################################################################
+df_pt <- read_csv("./data/processed/ab-ebdusers-person-trips.csv")             #
+################################################################################
+# Travel costs                                                                 #
+################################################################################
+df_travel_costs <- read_csv("./data/processed/ab-ebd-travel-costs.csv")        #
+################################################################################
+# User postal codes                                                            #
+################################################################################
 df_pc_sub <- read_csv("./data/processed/ab-ebdusers-pc-locations.csv")
-
-# Euclidean distances
+################################################################################
+# Euclidean distances                                                          #
+################################################################################
 df_euc_dist <- read_csv("./data/processed/pc-hotspot-euclidean-distances.csv")
-
-# All hotspot locations
-df_hot_loc <- read_csv("./data/processed/ab-ebd-hotspot-locations.csv")
-
-#-------------------------------------------------------------------------------
-#originally set trvel distance as 5km to 120km, make necesssary changes
+################################################################################
+# All hotspot locations                                                        #
+df_hot_loc <- read_csv("./data/processed/ab-ebd-hotspot-locations.csv")        #
+################################################################################
+#originally set trvel distance as 5km to 120km, make necesssary changes        #
+################################################################################
 travel_cutoff_lo = 5
 travel_cutoff_hi = 120
-
-# Retrieve relevant person-trips (have postal codes, between 5 - 120 km)
-
+################################################################################
+# Retrieve relevant person-trips (have postal codes, between 5 - 120 km)       #
+################################################################################
 df_pt_rel <- df_pt %>%
   left_join(df_pc_sub, by = "observer_id") %>%
-  # Filter out trips where we don't have postal code info; might want these later though.
+# Filter out trips where we don't have postal code info; might want these later though.
   filter(!is.na(postal_code)) %>%
   left_join(df_euc_dist, by = c("postal_code", "locality_id")) %>%
   filter(euc_distance_km <= travel_cutoff_hi & euc_distance_km >= travel_cutoff_lo) %>%
   select(observer_id, observation_date, locality_id, locality) # missing Kanaskis travel costs. 
-
-# Calculate trip counts by month-year 
-
+################################################################################
+# Calculate trip counts by month-year                                          #
+################################################################################
 df_trip_counts <- df_pt_rel %>%
   mutate(month = as.character(month(observation_date, label = TRUE)),
          year = year(observation_date)) %>%
   group_by(observer_id, locality_id, month, year) %>%
   tally()
-
-#-------------------------------------------------------------------------------
-
-# Construct large (!) choice set matrix for modeling
-
-# Vector of hotspots - 1,227 total.
-locality_id <- df_hot_loc %>% pull(locality_id)
-
-# Vector of unique users - 404 total.
+################################################################################
+# Construct large (!) choice set matrix for modeling                           #
+################################################################################
+# Vector of hotspots - 1,227 total.                                            #
+################################################################################
+locality_id <- df_hot_loc %>% pull(locality_id)                                #
+################################################################################
+# Vector of unique users - 404 total.                                          #
+################################################################################
 observer_id <- df_pt_rel %>% select(observer_id) %>% distinct() %>% pull()
-
-# Earliest trips
+################################################################################
+# Earliest trips                                                               #
+################################################################################
 earliest <- df_pt_rel %>%
   group_by(observer_id) %>%
   summarise(earliest_trip = floor_date(min(observation_date), unit = "month")) 
-
-# Vector of years
+################################################################################
+# Vector of years                                                              #
+################################################################################
 year <- seq(2009, 2020, 1)
-# Vector of months
+################################################################################
+# Vector of months                                                             #
+################################################################################
 month <- month.abb
-
-# Travel costs
+################################################################################
+# Travel costs                                                                 #
+################################################################################
 df_costs <- df_travel_costs %>% select(locality_id, postal_code, cost_total)
-
-# Construct matrix
+################################################################################
+# Construct matrix                                                             #
+################################################################################
 df_modeling <- crossing(observer_id, locality_id) %>%
   left_join(df_pc_sub, by = "observer_id") %>%
   select(-c(latitude, longitude)) %>%

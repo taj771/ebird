@@ -1,9 +1,8 @@
-#-------------------------------------------------------------------------------
-# Title: model 6
+################################################################################
+# Title: model 8
 # Date: 9/29/2021
 # Description: Graphs and summary statistics
-
-#-------------------------------------------------------------------------------
+################################################################################
 
 # check unique hotspots within relevant trips(878)
 df_hot_loc <- read_csv("./data/processed/ab-ebd-hotspot-locations.csv")
@@ -76,7 +75,8 @@ abline(lm(n~n_species,data = df),col = "red")
 
 df_trval_plot = read_csv("./data/processed/travel_cost_plot.csv")
 df_species_rich_plot = read_csv("./data/processed/species_rich_plot.csv")
-df_2nd_quar_plot = read_csv("./data/processed/1st_quar_sr_pot.csv")
+df_secies_risk = read.csv("./data/processed/birds_risk_plot.csv")
+df_2nd_quar_plot = read_csv("./data/processed/2nd_quar_sr_pot.csv")
 df_3rd_quar_plot = read_csv("./data/processed/3rd_quar_sr_plot.csv")
 df_4th_quar_plot = read_csv("./data/processed/4th_quar_sr_plot.csv")
 

@@ -33,7 +33,7 @@ travel_hours_lo = 5/60 # 5/60 is 5 minutes
 travel_hours_hi = 2 #
 
 # Choose number of non-chosen alternatives to sample
-n_alts = 5
+n_alts = 50
 
 #-------------------------------------------------------------------------------
 # Function to sample non-chosen consideration_sets for each person
@@ -94,9 +94,17 @@ df_spe2 <- read_csv("./data/processed/number_of_species2.csv")
 # number of birds at risk
 df_risk <- read_csv("./data/processed/endangered_species.csv")
 
-# type of parks
-df_park <- read_csv("./data/processed/type_of_hotspt.csv")
+# type of parks - national parks
+df_nat_park <- read_csv("./data/processed/nat_parks.csv")
 
+# type of parks - provincial parks
+df_prov_park <- read_csv("./data/processed/prov_parks.csv")
+
+# type of parks - other parks
+df_other_park <- read_csv("./data/processed/other_parks.csv")
+
+# type of parks - out of the park boundary
+df_out_park <- read_csv("./data/processed/out_parks.csv")
 
 
 #-------------------------------------------------------------------------------
@@ -136,12 +144,18 @@ df_trip <- df_pt_rel %>%
   left_join(df_spe, by = c("locality_id"))%>%
   left_join(df_spe2, by = c("locality_id"))%>%
   left_join(df_risk, by = c("locality_id"))%>%
-  left_join(df_park, by = c("locality_id"))%>%
+  left_join(df_nat_park, by = c("locality_id"))%>%
+  left_join(df_prov_park, by = c("locality_id"))%>%
+  left_join(df_other_park, by = c("locality_id"))%>%
+  left_join(df_out_park, by = c("locality_id"))%>%
   filter(!is.na(cost_total)) %>%
   filter(!is.na(num_species))%>%
   filter(!is.na(num_spe2))%>%
   filter(!is.na(freq))%>%
-  filter(!is.na(TYPE))%>%
+  filter(!is.na(nat_bin))%>%
+  filter(!is.na(prov_bin))%>%
+  filter(!is.na(otr_bin))%>%
+  filter(!is.na(out_bin))%>%
   select(observer_id, locality_id, month, year, choice_occasion, choice)   
 
 df_trip %>%
@@ -172,8 +186,14 @@ df_consideration_sets <- crossing(observer_id, locality_id) %>%
   filter(!is.na(num_spe2))%>%
   left_join(df_risk, by = c("locality_id"))%>%
   filter(!is.na(freq))%>%
-  left_join(df_park, by = c("locality_id"))%>%
-  filter(!is.na(TYPE))
+  left_join(df_nat_park, by = c("locality_id"))%>%
+  filter(!is.na(nat_bin))%>%
+  left_join(df_prov_park, by = c("locality_id"))%>%
+  filter(!is.na(prov_bin))%>%
+  left_join(df_other_park, by = c("locality_id"))%>%
+  filter(!is.na(otr_bin))%>%
+  left_join(df_out_park, by = c("locality_id"))%>%
+  filter(!is.na(out_bin))
 
 # Only keep combos we're interested 
 if(consider_time == 1){ #  by time
@@ -218,9 +238,21 @@ df_modeling = df_modeling%>%
 df_modeling = df_modeling%>%
   left_join(df_risk, by = "locality_id")
 
-# Add back parks
+# Add back national parks
 df_modeling = df_modeling%>%
-  left_join(df_park, by = "locality_id")
+  left_join(df_nat_park, by = "locality_id")
+
+# Add back provincial parka
+df_modeling = df_modeling%>%
+  left_join(df_prov_park, by = "locality_id")
+
+# Add back other parks
+df_modeling = df_modeling%>%
+  left_join(df_other_park, by = "locality_id")
+
+# Add back out of the parks 
+df_modeling = df_modeling%>%
+  left_join(df_out_park, by = "locality_id")
 
 # Should all be 1
 df_modeling %>%
@@ -275,12 +307,29 @@ df_ri = df_modeling%>%
               names_prefix = "es_",
               values_from = "freq")
 
-# create park in wide format
-df_pr = df_modeling%>%
+# create national park in wide format
+df_nat_pr = df_modeling%>%
   pivot_wider(choice_id, names_from = "alt",
-              names_prefix = "pr_",
-              values_from = "TYPE")
+              names_prefix = "nat_pr_",
+              values_from = "nat_bin")
 
+# create provincial park in wide format
+df_prov_pr = df_modeling%>%
+  pivot_wider(choice_id, names_from = "alt",
+              names_prefix = "prov_pr_",
+              values_from = "prov_bin")
+
+# create other park in wide format
+df_other_pr = df_modeling%>%
+  pivot_wider(choice_id, names_from = "alt",
+              names_prefix = "otr_pr_",
+              values_from = "otr_bin")
+
+# create out park observation in wide format
+df_out_pr = df_modeling%>%
+  pivot_wider(choice_id, names_from = "alt",
+              names_prefix = "out_pr_",
+              values_from = "out_bin")
 
 # Need availability because some people do not have n_alts alternatives in consideration sets
 
@@ -305,7 +354,7 @@ df_avail =  df_modeling %>%
 df_avail =  df_modeling %>%
   pivot_wider(choice_id, names_from = "alt", 
               names_prefix = "avail_",
-              values_from = "TYPE") %>%
+              values_from = "nat_bin") %>%
   mutate_at(vars(contains('avail_')), ~(ifelse(is.na(.), 0, 1)))
 
 summary(df_avail)
@@ -336,11 +385,14 @@ df_apollo = df_choice %>%
   left_join(df_sr, by = "choice_id")%>%
   left_join(df_sr2, by = "choice_id")%>%
   left_join(df_ri, by = "choice_id")%>%
-  left_join(df_pr, by = "choice_id")%>%
+  left_join(df_nat_pr, by = "choice_id")%>%
+  left_join(df_prov_pr, by = "choice_id")%>%
+  left_join(df_other_pr, by = "choice_id")%>%
+  left_join(df_out_pr, by = "choice_id")%>%
   left_join(df_avail, by = "choice_id")
 
 
-write_csv(df_apollo, "data/processed/ApolloData_nalt5.csv")
+write_csv(df_apollo, "data/processed/ApolloData_nalt50.csv")
 
 df_apollo = df_apollo%>%
   drop_na()

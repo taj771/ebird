@@ -31,13 +31,13 @@ database <- read.csv("./data/processed/ApolloData_nalt50.csv")
 #------------------------------------------------------------------------------#
 # Divide TC by 10 to for convergence
 #------------------------------------------------------------------------------#
-#database <- database %>%
-  #mutate_at(vars(starts_with("tc_")), ~./ 10 ) %>%
-  #arrange(choice_id)
+database <- database %>%
+  mutate_at(vars(starts_with("tc_")), ~./ 1000 ) %>%
+  arrange(choice_id)
 
-#database <- database %>%
-  #mutate_at(vars(starts_with("sr_")), ~./ 10 ) %>%
-  #arrange(choice_id)
+database <- database %>%
+  mutate_at(vars(starts_with("sr_")), ~./ 100 ) %>%
+  arrange(choice_id)
 
 
 #database <- database %>%
@@ -62,14 +62,19 @@ J = length(unique(database$choice))
 
 ### Vector of parameters, including any that are kept fixed in estimation
 
-apollo_beta = c(b_tc = -0.020798,
-                mu_sr = 0.027362,
+apollo_beta = c(b_tc = -0.01,
+                mu_sr = 0.01,
                 #b_sr2 = -0.004933,
-                #b_spe_ri = 0.0167389,
+                b_spe_ri = 0.01,
+                b_pr_nat = 0.01,
+                b_pr_prov = 0.01,
+                b_pr_oth = 0.01,
+                b_pr_out = 0.01,
                 #b_2nd_sr = 0.038308,
                 #b_3rd_sr = 0.02034,
                 #b_4th_sr = 0.08980,
-                sigma_sr = 0.0001)
+                #sigma_sr = 0.001,
+                sigma_sr = 0.01)
 
 ### Vector with names (in quotes) of parameters to be kept fixed at their starting value in apollo_beta, use apollo_beta_fixed = c() if none
 apollo_fixed = c()
@@ -82,7 +87,7 @@ apollo_fixed = c()
 ### Set parameters for generating draws
 apollo_draws = list(
   interDrawsType = "halton",
-  interNDraws    = 100,
+  interNDraws    = 50,
   interUnifDraws = c(),
   interNormDraws = c("draws_sr","draws_sr2","draws_spe_ri","draws_end",
                      "draws_2nd_sr", "draws_3rd_sr", "draws_4th_sr"),
@@ -134,9 +139,13 @@ apollo_probabilities=function(apollo_beta, apollo_inputs, functionality="estimat
   # set up utilities for hotspots
   for ( j in 1:J ) {
     V[[ paste0('choice', j ) ]] = b_tc * get(paste0('tc_', j)) + 
-      b_sr * get(paste0("sr_", j))
+      b_sr * get(paste0("sr_", j)) +
       #b_sr2 * get(paste0("sr2_", j))+  
-      #b_spe_ri * get(paste0("es_", j)) +
+      b_spe_ri * get(paste0("es_", j)) +
+      b_pr_nat * get(paste0("nat_pr_",j))  +
+      b_pr_prov * get(paste0("prov_pr_",j)) +
+      b_pr_oth * get(paste0("otr_pr_",j)) +
+      b_pr_out * get(paste0("out_pr_",j)) 
       #b_2nd_sr * get(paste0("sr_", j))*(month == 2) +
       #b_3rd_sr * get(paste0("sr_", j))*(month == 3) + 
       #b_4th_sr * get(paste0("sr_", j))*(month == 4) 

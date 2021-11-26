@@ -69,7 +69,10 @@ apollo_beta = c(b_tc = 0,
                 b_es = 0,
                 b_2nd_sr = 0,
                 b_3rd_sr = 0,
-                b_4th_sr = 0)
+                b_4th_sr = 0,
+                b_pr_nat = 0,
+                b_pr_prov = 0,
+                b_pr_oth = 0)
 
 
 ################################################################################
@@ -112,7 +115,12 @@ apollo_probabilities=function(apollo_beta, apollo_inputs, functionality="estimat
       b_es * get(paste0("es_", j)) +
       b_2nd_sr * get(paste0("sr_", j))*(month == 2) + 
       b_3rd_sr * get(paste0("sr_", j))*(month == 3) + 
-      b_4th_sr * get(paste0("sr_", j))*(month == 4)
+      b_4th_sr * get(paste0("sr_", j))*(month == 4) +
+      b_pr_nat * get(paste0("nat_pr_",j))  +
+      b_pr_prov * get(paste0("prov_pr_",j)) +
+      b_pr_oth * get(paste0("otr_pr_",j))
+      
+      
       
     avail[[paste0("choice", j)]]=get(paste0("avail_", j))
   }
